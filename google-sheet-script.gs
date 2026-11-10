@@ -13,7 +13,7 @@ var SITE = 'https://anew-story-begins.github.io/Anew-story-begins/';
 var HEAD = ['Name', 'WhatsApp', 'Ladies', 'Gents', 'Children', 'Code', 'Invite link', 'Send invite', 'Answer', 'Answered on', 'Note', 'Coming: Ladies', 'Coming: Gents', 'Coming: Children', 'Coming: Total', 'Send reminder'];
 var C = { name: 1, phone: 2, ladies: 3, gents: 4, children: 5, code: 6, link: 7, send: 8, answer: 9, at: 10, note: 11, cl: 12, cg: 13, cc: 14, ct: 15, rem: 16 };
 // Reminder wording (change when the real date / venue is known)
-var WHEN = 'Wednesday, 11 November 2026 at 4:15 PM (Kenya time)';
+var WHEN = 'Tuesday, 10 November 2026 at 4:45 PM (Kenya time)';
 var VENUE = '';
 var ANSWERS = { yes: 'Joyfully accepts', maybe: 'Maybe', no: 'Regretfully declines' };
 
