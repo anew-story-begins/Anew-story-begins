@@ -10,8 +10,8 @@
  * When a guest answers on the website, Answer / Answered on (and Note) fill in by themselves.
  */
 var SITE = 'https://anew-story-begins.github.io/Anew-story-begins/';
-var HEAD = ['Name', 'WhatsApp', 'Ladies', 'Gents', 'Children', 'Code', 'Invite link', 'Send invite', 'Answer', 'Answered on', 'Note', 'Coming: Ladies', 'Coming: Gents', 'Coming: Children', 'Coming: Total', 'Send reminder'];
-var C = { name: 1, phone: 2, ladies: 3, gents: 4, children: 5, code: 6, link: 7, send: 8, answer: 9, at: 10, note: 11, cl: 12, cg: 13, cc: 14, ct: 15, rem: 16 };
+var HEAD = ['Name', 'WhatsApp', 'Ladies', 'Gents', 'Children', 'Code', 'Invite link', 'Send invite', 'Answer', 'Answered on', 'Note', 'Coming: Ladies', 'Coming: Gents', 'Coming: Children', 'Coming: Total', 'Send reminder', 'Invite sent?', 'Reminder sent?'];
+var C = { name: 1, phone: 2, ladies: 3, gents: 4, children: 5, code: 6, link: 7, send: 8, answer: 9, at: 10, note: 11, cl: 12, cg: 13, cc: 14, ct: 15, rem: 16, isent: 17, rsent: 18 };
 // Reminder wording (change when the real date / venue is known)
 var WHEN = 'Tuesday, 10 November 2026 at 4:45 PM (Kenya time)';
 var VENUE = '';
@@ -68,6 +68,7 @@ function makeLinks() {
     var msg = 'Assalam o Alaikum ' + name + ',\nYou are warmly invited to our wedding' +
       (counts(+r[2], +r[3], +r[4]) ? ' (' + counts(+r[2], +r[3], +r[4]) + ')' : '') + '.\nPlease open your invitation: ' + link;
     var row = i + 2;
+    sh.getRange(row, C.isent, 1, 2).insertCheckboxes();   // tick these after you send
     sh.getRange(row, C.code).setValue(code);
     sh.getRange(row, C.link).setValue(link);
     if (phone.length >= 8) sh.getRange(row, C.send).setFormula('=HYPERLINK("https://wa.me/' + phone + '?text=' + encodeURIComponent(msg) + '","Send ➜")');
@@ -105,7 +106,7 @@ function reminderCell(sh, row) {
 // "Summary" tab: every number is a live formula, so it updates by itself the moment a guest answers.
 function summary() {
   var ss = SpreadsheetApp.getActive(), sh = ss.getSheetByName('Summary');
-  if (sh) return sh;
+  if (sh) return lists(sh);
   sh = ss.insertSheet('Summary', 1);
   var rows = [
     ['WEDDING SUMMARY (updates live)', ''],
@@ -134,6 +135,23 @@ function summary() {
   sh.getRange('A16:B16').setFontWeight('bold').setBackground('#f4e7cd');
   sh.getRange('B20').setNumberFormat('d mmm yyyy, h:mm am/pm');
   sh.setColumnWidth(1, 330); sh.setColumnWidth(2, 160);
+  return lists(sh);
+}
+
+// Live name lists on the Summary tab: who has not answered, whose invite / reminder is not ticked as sent.
+function lists(sh) {
+  if (sh.getRange('D1').getValue()) return sh;
+  var L = [
+    ['D', 'NOT ANSWERED YET', '=IFERROR(FILTER(Guests!A2:B,Guests!A2:A<>"",Guests!I2:I=""),"Everyone has answered")'],
+    ['G', 'INVITE NOT TICKED AS SENT', '=IFERROR(FILTER(Guests!A2:B,Guests!A2:A<>"",Guests!Q2:Q<>TRUE),"All invites sent")'],
+    ['J', 'SAID YES, REMINDER NOT TICKED AS SENT', '=IFERROR(FILTER(Guests!A2:B,Guests!I2:I="Joyfully accepts",Guests!R2:R<>TRUE),"All reminders sent")']
+  ];
+  L.forEach(function (l) {
+    sh.getRange(l[0] + '1').setValue(l[1]);
+    sh.getRange(l[0] + '1').setFontWeight('bold').setBackground('#f4e7cd');
+    sh.getRange(l[0] + '2').setFormula(l[2]);
+  });
+  [4, 7, 10].forEach(function (c) { sh.setColumnWidth(c, 200); sh.setColumnWidth(c + 1, 140); });
   return sh;
 }
 
