@@ -10,8 +10,8 @@
  * When a guest answers on the website, Answer / Answered on (and Note) fill in by themselves.
  */
 var SITE = 'https://anew-story-begins.github.io/Anew-story-begins/';
-var HEAD = ['Name', 'WhatsApp', 'Ladies', 'Gents', 'Children', 'Code', 'Invite link', 'Send invite', 'Answer', 'Answered on', 'Note', 'Coming: Ladies', 'Coming: Gents', 'Coming: Children', 'Coming: Total', 'Send reminder', 'Invite sent?', 'Reminder sent?'];
-var C = { name: 1, phone: 2, ladies: 3, gents: 4, children: 5, code: 6, link: 7, send: 8, answer: 9, at: 10, note: 11, cl: 12, cg: 13, cc: 14, ct: 15, rem: 16, isent: 17, rsent: 18 };
+var HEAD = ['Name', 'WhatsApp', 'Ladies', 'Gents', 'Children', 'Code', 'Invite link', 'Send invite', 'Answer', 'Answered on', 'Note', 'Coming: Ladies', 'Coming: Gents', 'Coming: Children', 'Coming: Total', 'Send reminder', 'Invite sent?', 'Reminder sent?', 'Wants updates', 'Wants reminder', 'Send update'];
+var C = { name: 1, phone: 2, ladies: 3, gents: 4, children: 5, code: 6, link: 7, send: 8, answer: 9, at: 10, note: 11, cl: 12, cg: 13, cc: 14, ct: 15, rem: 16, isent: 17, rsent: 18, wup: 19, wrem: 20, upd: 21 };
 // Reminder wording (change when the real date / venue is known)
 var WHEN = 'Tuesday, 10 November 2026 at 4:45 PM (Kenya time)';
 var VENUE = '';
@@ -25,7 +25,7 @@ function setup() {
 
 // Adds the "Wedding" menu every time the sheet is opened.
 function onOpen() {
-  try { SpreadsheetApp.getUi().createMenu('Wedding').addItem('Make invite links', 'makeLinks').addItem('Make reminder links (guests who said yes)', 'makeReminders').addToUi(); } catch (err) {}
+  try { SpreadsheetApp.getUi().createMenu('Wedding').addItem('Make invite links', 'makeLinks').addItem('Make reminder links (guests who said yes)', 'makeReminders').addItem('Send an event update…', 'makeUpdates').addToUi(); } catch (err) {}
 }
 
 function guests() {
@@ -92,7 +92,7 @@ function makeReminders() {
 // Fills (or clears) the "Send reminder" link of one guest. Called by the menu and live after every RSVP.
 function reminderCell(sh, row) {
   var r = sh.getRange(row, 1, 1, HEAD.length).getValues()[0], cell = sh.getRange(row, C.rem), name = String(r[C.name - 1]).trim();
-  if (!name || r[C.answer - 1] !== ANSWERS.yes) { cell.setValue(''); return false; }
+  if (!name || r[C.answer - 1] !== ANSWERS.yes || r[C.wrem - 1] === 'No') { cell.setValue(''); return false; }   // only yes, and not if they turned reminders off
   var phone = String(r[C.phone - 1]).replace(/\D/g, '');
   if (phone.length < 8) { cell.setValue('Add WhatsApp number'); return false; }
   var who = counts(+r[C.cl - 1], +r[C.cg - 1], +r[C.cc - 1]);
@@ -101,6 +101,26 @@ function reminderCell(sh, row) {
     ' and look forward to celebrating with you.\nYour invitation: ' + (r[C.link - 1] || SITE);
   cell.setFormula('=HYPERLINK("https://wa.me/' + phone + '?text=' + encodeURIComponent(msg) + '","Send reminder ➜")');
   return true;
+}
+
+// Asks you to type an update (e.g. "The venue is now ..."), then puts a "Send update ➜" WhatsApp link
+// on every guest who has not declined and has not turned event updates off.
+function makeUpdates() {
+  var ui = SpreadsheetApp.getUi(), res = ui.prompt('Event update', 'Type the update to send to guests:', ui.ButtonSet.OK_CANCEL);
+  if (res.getSelectedButton() !== ui.Button.OK) return;
+  var text = String(res.getResponseText() || '').trim(); if (!text) return;
+  var sh = guests(), last = sh.getLastRow(), made = 0;
+  if (last < 2) return;
+  var rows = sh.getRange(2, 1, last - 1, HEAD.length).getValues();
+  rows.forEach(function (r, i) {
+    var cell = sh.getRange(i + 2, C.upd), name = String(r[C.name - 1]).trim(), phone = String(r[C.phone - 1]).replace(/\D/g, '');
+    if (!name || r[C.answer - 1] === ANSWERS.no || r[C.wup - 1] === 'No') { cell.setValue(''); return; }
+    if (phone.length < 8) { cell.setValue('Add WhatsApp number'); return; }
+    var msg = 'Assalam o Alaikum ' + name + ',\nWedding update: ' + text + '\nYour invitation: ' + (r[C.link - 1] || SITE);
+    cell.setFormula('=HYPERLINK("https://wa.me/' + phone + '?text=' + encodeURIComponent(msg) + '","Send update ➜")');
+    made++;
+  });
+  SpreadsheetApp.getActive().toast(made + ' update link(s) ready in the "Send update" column.', 'Wedding');
 }
 
 // "Summary" tab: every number is a live formula, so it updates by itself the moment a guest answers.
@@ -198,6 +218,13 @@ function doGet(e) {
         reminderCell(sh, row);   // reminder link appears / disappears live
       }
       else log('Other RSVPs', ['Date', 'Name', 'Answer', 'Ladies', 'Gents', 'Children', 'Total'], [new Date(), nm, a, cl, cg, cc, cl + cg + cc]);
+      return reply({ ok: true });
+    }
+    if (p.action === 'prefs') {           // the two switches on the website
+      if (row) {
+        sh.getRange(row, C.wup, 1, 2).setValues([[p.updates === '1' ? 'Yes' : 'No', p.daybefore === '1' ? 'Yes' : 'No']]);
+        reminderCell(sh, row);
+      }
       return reply({ ok: true });
     }
     if (p.action === 'note_open') {
