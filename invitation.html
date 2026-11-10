@@ -60,7 +60,7 @@ a.val{text-decoration:none;cursor:pointer}a.val:hover{text-decoration:underline}
 .fld:focus-within{box-shadow:0 0 0 1px rgba(240,213,143,.0)}
 .hit{position:absolute;z-index:6;border:0;padding:0;background:transparent;cursor:pointer;border-radius:999px;-webkit-tap-highlight-color:transparent}
 .hit:focus-visible{outline:2px solid #f0d58f;outline-offset:2px}
-.msg4{position:absolute;z-index:6;left:30px;width:274px;text-align:center;font:italic 500 13px/1.3 'Cormorant Garamond',serif;color:#f0d58f;text-shadow:0 1px 2px #000}
+.msg4{position:absolute;z-index:6;left:24px;width:286px;text-align:center;font:italic 600 15px/1.3 'Cormorant Garamond',serif;color:#f0d58f;text-shadow:0 1px 2px #000}
 .sw{position:absolute;z-index:6;width:36px;height:22px;margin:-11px 0 0 -18px;border-radius:999px;border:0;padding:0;cursor:pointer;background:#2b0303}
 .sw i{position:absolute;inset:2px;border-radius:999px;background:#5a3a2a;transition:background .2s}
 .sw i::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#efe3cf;box-shadow:0 1px 2px #0008;transition:transform .2s}
@@ -276,21 +276,24 @@ var rf=$('rsvpF'),mine=ls('rsvp');
 function fill(r){if(!r)return;$('rName').value=r.name||'';$('rAttend').value=r.attending||'';$('rGuests').value=r.guests||'';$('rMsg').textContent='Your RSVP is saved. You can change it and submit again.'}
 fill(mine);
 function loadMine(){if(!DB||!UID)return;DB.doc('rsvps/'+UID).get().then(function(sn){if(sn.exists){var d=sn.data()||{};mine={name:String(d.name||''),attending:['yes','maybe','no'].indexOf(d.attending)>=0?d.attending:'',guests:+d.guests||''};fill(mine)}}).catch(function(){})}
+function say(t,bad){$('rMsg').textContent=t;toast(t)}
+function need(id,t){var el=$(id);say(t);var f=el.closest('.fld');if(f){f.style.boxShadow='0 0 0 2px #f0d58f';setTimeout(function(){f.style.boxShadow=''},2500)}el.focus()}
 rf.addEventListener('submit',function(e){e.preventDefault();
  var name=$('rName').value.trim().slice(0,60),att=$('rAttend').value,g=$('rGuests').value===''?0:Math.round(+$('rGuests').value);
- if(!name){$('rMsg').textContent='Please enter your full name.';$('rName').focus();return}
- if(!att){$('rMsg').textContent='Please choose whether you will attend.';$('rAttend').focus();return}
- if(!(g>=0&&g<=20)){$('rMsg').textContent='Guests must be a number from 0 to 20.';$('rGuests').focus();return}
+ if(!name){need('rName','Please enter your full name.');return}
+ if(!att){need('rAttend','Please choose: Joyfully accepts, Maybe or Regretfully declines.');return}
+ if(!(g>=0&&g<=20)){need('rGuests','Guests must be a number from 0 to 20.');return}
  var r={name:name,attending:att,guests:g,at:new Date().toISOString()};ls('rsvp',r);
  if(['yes','maybe','no'].indexOf(att)<0){$('rMsg').textContent='Please choose an answer.';return}
  var thanks={yes:'Thank you, '+name+'! We can’t wait to celebrate with you.',maybe:'Thank you, '+name+'. We hope you can make it!',no:'Thank you, '+name+'. You will be missed!'}[att];
- function toSheet(){if(!RSVP_SHEET_URL){$('rMsg').textContent=thanks;return Promise.resolve()}
-  var q='action=rsvp_open&name='+encodeURIComponent(name)+'&answer='+att+'&guests='+g+'&id='+encodeURIComponent(rid());
+ var sb=$('rSubmit');function toSheet(){if(!RSVP_SHEET_URL){say(thanks);return Promise.resolve()}sb.disabled=true;
+  var q=(GUEST?'g='+GUEST+'&':'')+'action=rsvp_open&name='+encodeURIComponent(name)+'&answer='+att+'&guests='+g+'&id='+encodeURIComponent(rid());
   $('rMsg').textContent='Sending\u2026';
-  return fetch(RSVP_SHEET_URL+(RSVP_SHEET_URL.indexOf('?')<0?'?':'&')+q,{mode:'no-cors'}).then(function(){$('rMsg').textContent=thanks},function(){$('rMsg').textContent='Could not send. Please check your internet and press Submit again.'})}
+  return fetch(RSVP_SHEET_URL+(RSVP_SHEET_URL.indexOf('?')<0?'?':'&')+q,{mode:'no-cors'}).then(function(){sb.disabled=false;say(thanks)},function(){sb.disabled=false;say('Could not send. Please check your internet and press Submit again.')})}
  if(DB&&UID){$('rMsg').textContent='Sending\u2026';DB.doc('rsvps/'+UID).set(r).then(toSheet,toSheet)}else toSheet()});
 /* RSVPs go straight to the Google Sheet (paste its web app link here when it is ready) */
-var RSVP_SHEET_URL='';
+var RSVP_SHEET_URL='https://script.google.com/macros/s/AKfycbxPED67GBv_M6G4ln8av3FnzMyNxnMvo0bXgD4dgfc3ekyBYbGHPO9GLaqK2SBj7U27/exec';
+var GUEST=(function(){try{var g=new URLSearchParams(location.search).get('g')||'';if(/^[a-z0-9]{6,12}$/.test(g)){localStorage.setItem('guestCode',g);return g}return localStorage.getItem('guestCode')||''}catch(e){return ''}})();
 function rid(){var k='rsvpId',v=null;try{v=localStorage.getItem(k)}catch(e){}if(!v){v=Math.random().toString(36).slice(2,10)+Date.now().toString(36);try{localStorage.setItem(k,v)}catch(e){}}return v}
 
 /* ===== WhatsApp & reminders ===== */
@@ -312,12 +315,17 @@ $('mRsvps').addEventListener('click',function(){closeM();if(!DB)return;$('rlBody
    [String(x.name||'—'),({yes:'Joyfully accepts',maybe:'Maybe',no:'Regretfully declines'})[x.attending]||'—',String(+x.guests||0),rl.join(', ')||'—'].forEach(function(t){var td=document.createElement('td');td.textContent=t;tr.appendChild(td)});tb.appendChild(tr)});
   $('rlSum').textContent=rs[0].docs.length?yes+' accept (+'+gs+' guests) · '+mb+' maybe (+'+gm+') · '+no+' decline':'No RSVPs yet.'}).catch(function(){$('rlSum').textContent='Could not load RSVPs.'})});
 $('rlClose').addEventListener('click',function(){$('rl').classList.remove('open')});
+if(GUEST&&RSVP_SHEET_URL){fetch(RSVP_SHEET_URL+'?action=guest&g='+GUEST).then(function(r){return r.json()}).then(function(d){if(!d||!d.ok)return;
+ var nm=String(d.name||'').slice(0,80);if(nm){$('rName').value=nm;$('rName').readOnly=true;$('rName').style.cursor='default'}
+ var c=[];if(d.ladies>0)c.push(d.ladies+(d.ladies==1?' Lady':' Ladies'));if(d.gents>0)c.push(d.gents+(d.gents==1?' Gent':' Gents'));if(d.children>0)c.push(d.children+(d.children==1?' Child':' Children'));
+ var tot=(+d.ladies||0)+(+d.gents||0)+(+d.children||0);if(tot)$('rGuests').value=tot;
+ $('rMsg').textContent='Dear '+nm+(c.length?', your invitation is for '+c.join(', '):'')+'.'}).catch(function(){})}
 $('noteF').addEventListener('submit',function(e){e.preventDefault();var t=$('noteIn').value.trim();if(!t){$('noteIn').focus();return}
  var nm=(mine&&mine.name)||$('rName').value.trim();var nb=$('noteF').querySelector('button');nb.disabled=true;
  function done(ok){nb.disabled=false;if(ok){$('noteIn').value='';toast('Thank you'+(nm?', '+nm:'')+'! Your note has been sent to the newlyweds.')}else toast('Could not send. Please check your internet and try again.')}
  if(!RSVP_SHEET_URL){done(true);return}
- fetch(RSVP_SHEET_URL+(RSVP_SHEET_URL.indexOf('?')<0?'?':'&')+'action=note_open&name='+encodeURIComponent(nm||'')+'&text='+encodeURIComponent(t.slice(0,500))+'&id='+encodeURIComponent(rid()),{mode:'no-cors'}).then(function(){done(true)},function(){done(false)})});
+ fetch(RSVP_SHEET_URL+(RSVP_SHEET_URL.indexOf('?')<0?'?':'&')+(GUEST?'g='+GUEST+'&':'')+'action=note_open&name='+encodeURIComponent(nm||'')+'&text='+encodeURIComponent(t.slice(0,500))+'&id='+encodeURIComponent(rid()),{mode:'no-cors'}).then(function(){done(true)},function(){done(false)})});
 })();
 </script><script>try{history.scrollRestoration='manual'}catch(e){}window.scrollTo(0,0);addEventListener('load',function(){window.scrollTo(0,0)});addEventListener('pageshow',function(){window.scrollTo(0,0)});</script>
-<script>(function(){var g=document.getElementById('goldin');try{var m=/g=(\d+),(\d+)/.exec(location.hash);if(m){g.style.setProperty('--gx',m[1]+'px');g.style.setProperty('--gy',m[2]+'px');history.replaceState(null,'',location.pathname)}}catch(e){}
+<script>(function(){var g=document.getElementById('goldin');try{var m=/g=(\d+),(\d+)/.exec(location.hash);if(m){g.style.setProperty('--gx',m[1]+'px');g.style.setProperty('--gy',m[2]+'px');history.replaceState(null,'',location.pathname+location.search)}}catch(e){}
 function go(){g.classList.add('out')}if(document.readyState!=='loading')go();else document.addEventListener('DOMContentLoaded',go)})();</script></body></html>

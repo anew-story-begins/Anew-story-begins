@@ -72,5 +72,5 @@ function unlockSound(){
 }
 document.getElementById('tap').addEventListener('click',()=>{open=!open;render();if(open)unlockSound();document.body.classList.toggle('go',open);clearTimeout(goNext);
  if(open){const[x,y]=holePos(),vf=document.documentElement;vf.style.setProperty('--gx',x+'px');vf.style.setProperty('--gy',y+'px');
-  goNext=setTimeout(()=>{location.href='invitation.html#g='+x+','+y},4650)}});render();
+  goNext=setTimeout(()=>{location.href='invitation.html'+location.search+'#g='+x+','+y},4650)}});render();
 </script></body></html>
