@@ -158,18 +158,24 @@ function summary() {
 
 // Live name lists on the Summary tab: who has not answered, whose invite / reminder is not ticked as sent.
 function lists(sh) {
-  if (sh.getRange('J1').getValue() === 'YES / MAYBE, REMINDER NOT SENT YET') return sh;   // already up to date
+  var T3 = 'REMINDER NOT SENT YET (said yes / maybe)';
+  if (sh.getRange('L1').getValue() === T3) return sh;   // already up to date
+  sh.getRange('D1:Z200').clear();
+  var ok = '((Guests!I2:I="Joyfully accepts")+(Guests!I2:I="Maybe"))*(Guests!T2:T<>"No")*(Guests!R2:R<>TRUE)';
   var L = [
-    ['D', 'NOT ANSWERED YET', '=IFERROR(FILTER(Guests!A2:B,Guests!A2:A<>"",Guests!I2:I=""),"Everyone has answered")'],
-    ['G', 'INVITE NOT TICKED AS SENT', '=IFERROR(FILTER(Guests!A2:B,Guests!A2:A<>"",Guests!Q2:Q<>TRUE),"All invites sent")'],
-    ['J', 'YES / MAYBE, REMINDER NOT SENT YET', '=IFERROR(FILTER(Guests!A2:B,((Guests!I2:I="Joyfully accepts")+(Guests!I2:I="Maybe"))*(Guests!T2:T<>"No"),Guests!R2:R<>TRUE),"All reminders sent")']
+    ['D', 'NOT ANSWERED YET', ['Name', 'WhatsApp'], '=IFERROR(FILTER(Guests!A2:B,Guests!A2:A<>"",Guests!I2:I=""),"Everyone has answered")'],
+    ['H', 'INVITE NOT SENT YET', ['Name', 'WhatsApp'], '=IFERROR(FILTER(Guests!A2:B,Guests!A2:A<>"",Guests!Q2:Q<>TRUE),"All invites sent")'],
+    ['L', T3, ['Name', 'WhatsApp', 'Answer'], '=IFERROR(FILTER({Guests!A2:B,Guests!I2:I},' + ok + '),"All reminders sent")']
   ];
   L.forEach(function (l) {
-    sh.getRange(l[0] + '1').setValue(l[1]);
-    sh.getRange(l[0] + '1').setFontWeight('bold').setBackground('#f4e7cd');
-    sh.getRange(l[0] + '2').setFormula(l[2]);
+    var col = l[0].charCodeAt(0) - 64;
+    sh.getRange(1, col).setValue(l[1]);
+    sh.getRange(1, col, 1, l[2].length).setFontWeight('bold').setBackground('#f4e7cd');
+    sh.getRange(2, col, 1, l[2].length).setValues([l[2]]).setFontWeight('bold');
+    sh.getRange(3, col).setFormula(l[3]);
+    sh.setColumnWidth(col, 200); sh.setColumnWidth(col + 1, 130); if (l[2].length > 2) sh.setColumnWidth(col + 2, 150);
   });
-  [4, 7, 10].forEach(function (c) { sh.setColumnWidth(c, 200); sh.setColumnWidth(c + 1, 140); });
+  sh.getRange('E:E').setNumberFormat('0'); sh.getRange('I:I').setNumberFormat('0'); sh.getRange('M:M').setNumberFormat('0');
   return sh;
 }
 
