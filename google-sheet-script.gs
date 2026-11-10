@@ -19,7 +19,7 @@ var ANSWERS = { yes: 'Joyfully accepts', maybe: 'Maybe', no: 'Regretfully declin
 
 // Run this once from the editor (choose "setup", press Run). It creates the Guests tab.
 function setup() {
-  guests();
+  guests(); summary();
   SpreadsheetApp.getActive().toast('Guests tab is ready.', 'Wedding');
 }
 
@@ -74,6 +74,7 @@ function makeLinks() {
     else sh.getRange(row, C.send).setValue('Add WhatsApp number');
     made++;
   });
+  summary();
   SpreadsheetApp.getActive().toast(made + ' invite link(s) ready. Click "Send ➜" for each guest.', 'Wedding');
 }
 
@@ -82,20 +83,58 @@ function makeLinks() {
 function makeReminders() {
   var sh = guests(), last = sh.getLastRow(), made = 0;
   if (last < 2) return;
-  var rows = sh.getRange(2, 1, last - 1, HEAD.length).getValues();
-  rows.forEach(function (r, i) {
-    var cell = sh.getRange(i + 2, C.rem), name = String(r[C.name - 1]).trim();
-    if (!name || r[C.answer - 1] !== ANSWERS.yes) { cell.setValue(''); return; }
-    var phone = String(r[C.phone - 1]).replace(/\D/g, '');
-    if (phone.length < 8) { cell.setValue('Add WhatsApp number'); return; }
-    var who = counts(+r[C.cl - 1], +r[C.cg - 1], +r[C.cc - 1]);
-    var msg = 'Assalam o Alaikum ' + name + ',\nA gentle reminder: our wedding is on ' + WHEN +
-      (VENUE ? ' at ' + VENUE : '') + '.\nWe are so happy you are joining us' + (who ? ' (' + who + ')' : '') +
-      ' and look forward to celebrating with you.\nYour invitation: ' + (r[C.link - 1] || SITE);
-    cell.setFormula('=HYPERLINK("https://wa.me/' + phone + '?text=' + encodeURIComponent(msg) + '","Send reminder ➜")');
-    made++;
-  });
+  for (var row = 2; row <= last; row++) if (reminderCell(sh, row)) made++;
+  summary();
   SpreadsheetApp.getActive().toast(made + ' reminder link(s) ready. Click "Send reminder ➜", attach the picture, send.', 'Wedding');
+}
+
+// Fills (or clears) the "Send reminder" link of one guest. Called by the menu and live after every RSVP.
+function reminderCell(sh, row) {
+  var r = sh.getRange(row, 1, 1, HEAD.length).getValues()[0], cell = sh.getRange(row, C.rem), name = String(r[C.name - 1]).trim();
+  if (!name || r[C.answer - 1] !== ANSWERS.yes) { cell.setValue(''); return false; }
+  var phone = String(r[C.phone - 1]).replace(/\D/g, '');
+  if (phone.length < 8) { cell.setValue('Add WhatsApp number'); return false; }
+  var who = counts(+r[C.cl - 1], +r[C.cg - 1], +r[C.cc - 1]);
+  var msg = 'Assalam o Alaikum ' + name + ',\nA gentle reminder: our wedding is on ' + WHEN +
+    (VENUE ? ' at ' + VENUE : '') + '.\nWe are so happy you are joining us' + (who ? ' (' + who + ')' : '') +
+    ' and look forward to celebrating with you.\nYour invitation: ' + (r[C.link - 1] || SITE);
+  cell.setFormula('=HYPERLINK("https://wa.me/' + phone + '?text=' + encodeURIComponent(msg) + '","Send reminder ➜")');
+  return true;
+}
+
+// "Summary" tab: every number is a live formula, so it updates by itself the moment a guest answers.
+function summary() {
+  var ss = SpreadsheetApp.getActive(), sh = ss.getSheetByName('Summary');
+  if (sh) return sh;
+  sh = ss.insertSheet('Summary', 1);
+  var rows = [
+    ['WEDDING SUMMARY (updates live)', ''],
+    ['Invitations (families)', '=COUNTA(Guests!A2:A)'],
+    ['Invited ladies', '=SUM(Guests!C2:C)'],
+    ['Invited gents', '=SUM(Guests!D2:D)'],
+    ['Invited children', '=SUM(Guests!E2:E)'],
+    ['Invited people in total', '=B3+B4+B5'],
+    ['', ''],
+    ['Joyfully accepts', '=COUNTIF(Guests!I2:I,"Joyfully accepts")'],
+    ['Maybe', '=COUNTIF(Guests!I2:I,"Maybe")'],
+    ['Regretfully declines', '=COUNTIF(Guests!I2:I,"Regretfully declines")'],
+    ['Not answered yet', '=COUNTA(Guests!A2:A)-COUNTA(Guests!I2:I)'],
+    ['', ''],
+    ['Coming: gents', '=SUMIF(Guests!I2:I,"Joyfully accepts",Guests!M2:M)'],
+    ['Coming: ladies', '=SUMIF(Guests!I2:I,"Joyfully accepts",Guests!L2:L)'],
+    ['Coming: children', '=SUMIF(Guests!I2:I,"Joyfully accepts",Guests!N2:N)'],
+    ['COMING IN TOTAL (said yes)', '=B13+B14+B15'],
+    ['Maybe coming (people)', '=SUMIF(Guests!I2:I,"Maybe",Guests!O2:O)'],
+    ['', ''],
+    ['Answers without a personal link: yes (people)', "=IFERROR(SUMIF('Other RSVPs'!C2:C,\"Joyfully accepts\",'Other RSVPs'!G2:G),0)"],
+    ['Last updated', '=MAX(Guests!J2:J)']
+  ];
+  sh.getRange(1, 1, rows.length, 2).setValues(rows);
+  sh.getRange('A1:B1').setFontWeight('bold').setBackground('#f4e7cd');
+  sh.getRange('A16:B16').setFontWeight('bold').setBackground('#f4e7cd');
+  sh.getRange('B20').setNumberFormat('d mmm yyyy, h:mm am/pm');
+  sh.setColumnWidth(1, 330); sh.setColumnWidth(2, 160);
+  return sh;
 }
 
 function clean(v, max) {
@@ -126,6 +165,7 @@ function doGet(e) {
   }
   var lock = LockService.getScriptLock(); lock.waitLock(10000);
   try {
+    summary();
     if (p.action === 'rsvp_open') {
       var a = ANSWERS[p.answer], nm = clean(p.name, 80);
       if (!a) return reply({ ok: false });
@@ -137,6 +177,7 @@ function doGet(e) {
         if (p.answer === 'no') { cl = cg = cc = 0; }
         sh.getRange(row, C.answer, 1, 2).setValues([[a, new Date()]]);
         sh.getRange(row, C.cl, 1, 4).setValues([[cl, cg, cc, cl + cg + cc]]);
+        reminderCell(sh, row);   // reminder link appears / disappears live
       }
       else log('Other RSVPs', ['Date', 'Name', 'Answer', 'Ladies', 'Gents', 'Children', 'Total'], [new Date(), nm, a, cl, cg, cc, cl + cg + cc]);
       return reply({ ok: true });
