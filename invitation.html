@@ -198,7 +198,7 @@ function loop(ms){gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);gl.unifor
 requestAnimationFrame(loop)})})();
 </script><script>(function(){function fit(){document.querySelectorAll('.scr').forEach(function(sec){var ph=sec.querySelector('.ph'),bd=sec.querySelector('.bd'),iw=ph.offsetWidth,ih=690,vw=sec.clientWidth,vh=window.innerHeight,c=Math.max(vw/iw,vh/ih),f=Math.min(vw/iw,vh/ih),k=f;ph.style.transform='translate(-50%,-50%) scale('+k+')';sec.style.height=(vw<vh*.75?Math.ceil(690*k):'')+(vw<vh*.75?'px':'');if(!bd.style.backgroundImage)bd.style.backgroundImage='url('+ph.querySelector('img').src+')'})}fit();addEventListener('resize',fit)})();</script><script>
 /* ===== Wedding details: edit these defaults, or use Menu > Edit Details ===== */
-var WEDDING={date:"2026-11-11",time:"16:15",venue:"",map:"",whatsapp:"",contacts:[{label:"Abdulqadir",number:"254726308830"},{label:"Ramla",number:"255754458953"}]};
+var WEDDING={date:"2026-11-10",time:"16:45",venue:"",map:"",whatsapp:"",contacts:[{label:"Abdulqadir",number:"254726308830"},{label:"Ramla",number:"255754458953"}]};
 (function(){
 var W=Object.assign({},WEDDING),$=function(i){return document.getElementById(i)};
 function when(){if(!W.date)return null;var d=new Date(W.date+'T'+(W.time||'00:00')+':00+03:00');return isNaN(d)?null:d}
