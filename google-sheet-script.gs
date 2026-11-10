@@ -10,8 +10,8 @@
  * When a guest answers on the website, Answer / Answered on (and Note) fill in by themselves.
  */
 var SITE = 'https://anew-story-begins.github.io/Anew-story-begins/';
-var HEAD = ['Name', 'WhatsApp', 'Ladies', 'Gents', 'Children', 'Code', 'Invite link', 'Send invite', 'Answer', 'Answered on', 'Note'];
-var C = { name: 1, phone: 2, ladies: 3, gents: 4, children: 5, code: 6, link: 7, send: 8, answer: 9, at: 10, note: 11 };
+var HEAD = ['Name', 'WhatsApp', 'Ladies', 'Gents', 'Children', 'Code', 'Invite link', 'Send invite', 'Answer', 'Answered on', 'Note', 'Coming: Ladies', 'Coming: Gents', 'Coming: Children', 'Coming: Total'];
+var C = { name: 1, phone: 2, ladies: 3, gents: 4, children: 5, code: 6, link: 7, send: 8, answer: 9, at: 10, note: 11, cl: 12, cg: 13, cc: 14, ct: 15 };
 var ANSWERS = { yes: 'Joyfully accepts', maybe: 'Maybe', no: 'Regretfully declines' };
 
 // Run this once from the editor (choose "setup", press Run). It creates the Guests tab.
@@ -34,6 +34,8 @@ function guests() {
     sh.getRange('B:B').setNumberFormat('@');
     sh.setColumnWidth(1, 200); sh.setColumnWidth(7, 260); sh.setColumnWidth(8, 120); sh.setColumnWidth(11, 260);
   }
+  // add any new headings to an existing sheet
+  if (sh.getLastColumn() < HEAD.length) sh.getRange(1, 1, 1, HEAD.length).setValues([HEAD]).setFontWeight('bold').setBackground('#f4e7cd');
   return sh;
 }
 
@@ -103,8 +105,16 @@ function doGet(e) {
     if (p.action === 'rsvp_open') {
       var a = ANSWERS[p.answer], nm = clean(p.name, 80);
       if (!a) return reply({ ok: false });
-      if (row) { sh.getRange(row, C.answer, 1, 2).setValues([[a + (+p.guests ? ' (' + (+p.guests) + ' guests)' : ''), new Date()]]); }
-      else log('Other RSVPs', ['Date', 'Name', 'Answer', 'Guests'], [new Date(), nm, a, Math.max(0, Math.min(20, parseInt(p.guests, 10) || 0))]);
+      var n = function (v) { return Math.max(0, Math.min(20, parseInt(v, 10) || 0)); };
+      var cl = n(p.ladies), cg = n(p.gents), cc = n(p.children);
+      if (row) {
+        var inv = sh.getRange(row, C.ladies, 1, 3).getValues()[0];
+        cl = Math.min(cl, +inv[0] || 0); cg = Math.min(cg, +inv[1] || 0); cc = Math.min(cc, +inv[2] || 0);  // never more than invited
+        if (p.answer === 'no') { cl = cg = cc = 0; }
+        sh.getRange(row, C.answer, 1, 2).setValues([[a, new Date()]]);
+        sh.getRange(row, C.cl, 1, 4).setValues([[cl, cg, cc, cl + cg + cc]]);
+      }
+      else log('Other RSVPs', ['Date', 'Name', 'Answer', 'Ladies', 'Gents', 'Children', 'Total'], [new Date(), nm, a, cl, cg, cc, cl + cg + cc]);
       return reply({ ok: true });
     }
     if (p.action === 'note_open') {
