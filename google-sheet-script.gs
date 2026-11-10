@@ -10,8 +10,11 @@
  * When a guest answers on the website, Answer / Answered on (and Note) fill in by themselves.
  */
 var SITE = 'https://anew-story-begins.github.io/Anew-story-begins/';
-var HEAD = ['Name', 'WhatsApp', 'Ladies', 'Gents', 'Children', 'Code', 'Invite link', 'Send invite', 'Answer', 'Answered on', 'Note', 'Coming: Ladies', 'Coming: Gents', 'Coming: Children', 'Coming: Total'];
-var C = { name: 1, phone: 2, ladies: 3, gents: 4, children: 5, code: 6, link: 7, send: 8, answer: 9, at: 10, note: 11, cl: 12, cg: 13, cc: 14, ct: 15 };
+var HEAD = ['Name', 'WhatsApp', 'Ladies', 'Gents', 'Children', 'Code', 'Invite link', 'Send invite', 'Answer', 'Answered on', 'Note', 'Coming: Ladies', 'Coming: Gents', 'Coming: Children', 'Coming: Total', 'Send reminder'];
+var C = { name: 1, phone: 2, ladies: 3, gents: 4, children: 5, code: 6, link: 7, send: 8, answer: 9, at: 10, note: 11, cl: 12, cg: 13, cc: 14, ct: 15, rem: 16 };
+// Reminder wording (change when the real date / venue is known)
+var WHEN = 'Wednesday, 11 November 2026 at 4:15 PM (Kenya time)';
+var VENUE = '';
 var ANSWERS = { yes: 'Joyfully accepts', maybe: 'Maybe', no: 'Regretfully declines' };
 
 // Run this once from the editor (choose "setup", press Run). It creates the Guests tab.
@@ -22,7 +25,7 @@ function setup() {
 
 // Adds the "Wedding" menu every time the sheet is opened.
 function onOpen() {
-  try { SpreadsheetApp.getUi().createMenu('Wedding').addItem('Make invite links', 'makeLinks').addToUi(); } catch (err) {}
+  try { SpreadsheetApp.getUi().createMenu('Wedding').addItem('Make invite links', 'makeLinks').addItem('Make reminder links (guests who said yes)', 'makeReminders').addToUi(); } catch (err) {}
 }
 
 function guests() {
@@ -72,6 +75,27 @@ function makeLinks() {
     made++;
   });
   SpreadsheetApp.getActive().toast(made + ' invite link(s) ready. Click "Send ➜" for each guest.', 'Wedding');
+}
+
+// For every guest who answered "Joyfully accepts", puts a "Send reminder ➜" link in the
+// Send reminder column. Click it: WhatsApp opens with the reminder text; attach the reminder picture and press send.
+function makeReminders() {
+  var sh = guests(), last = sh.getLastRow(), made = 0;
+  if (last < 2) return;
+  var rows = sh.getRange(2, 1, last - 1, HEAD.length).getValues();
+  rows.forEach(function (r, i) {
+    var cell = sh.getRange(i + 2, C.rem), name = String(r[C.name - 1]).trim();
+    if (!name || r[C.answer - 1] !== ANSWERS.yes) { cell.setValue(''); return; }
+    var phone = String(r[C.phone - 1]).replace(/\D/g, '');
+    if (phone.length < 8) { cell.setValue('Add WhatsApp number'); return; }
+    var who = counts(+r[C.cl - 1], +r[C.cg - 1], +r[C.cc - 1]);
+    var msg = 'Assalam o Alaikum ' + name + ',\nA gentle reminder: our wedding is on ' + WHEN +
+      (VENUE ? ' at ' + VENUE : '') + '.\nWe are so happy you are joining us' + (who ? ' (' + who + ')' : '') +
+      ' and look forward to celebrating with you.\nYour invitation: ' + (r[C.link - 1] || SITE);
+    cell.setFormula('=HYPERLINK("https://wa.me/' + phone + '?text=' + encodeURIComponent(msg) + '","Send reminder ➜")');
+    made++;
+  });
+  SpreadsheetApp.getActive().toast(made + ' reminder link(s) ready. Click "Send reminder ➜", attach the picture, send.', 'Wedding');
 }
 
 function clean(v, max) {
