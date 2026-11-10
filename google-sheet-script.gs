@@ -80,7 +80,7 @@ function makeLinks() {
 }
 
 // For every guest who answered "Joyfully accepts", puts a "Send reminder ➜" link in the
-// Send reminder column. Click it: WhatsApp opens with the reminder text; attach the reminder picture and press send.
+// Send reminder column. Click it: the guest's WhatsApp chat opens; attach the reminder picture and press send.
 function makeReminders() {
   var sh = guests(), last = sh.getLastRow(), made = 0;
   if (last < 2) return;
@@ -96,11 +96,8 @@ function reminderCell(sh, row) {
   if (!name || (ans !== ANSWERS.yes && ans !== ANSWERS.maybe) || r[C.wrem - 1] === 'No') { cell.setValue(''); return false; }   // every yes/maybe guest, unless they switched reminders off
   var phone = String(r[C.phone - 1]).replace(/\D/g, '');
   if (phone.length < 8) { cell.setValue('Add WhatsApp number'); return false; }
-  var who = counts(+r[C.cl - 1], +r[C.cg - 1], +r[C.cc - 1]);
-  var msg = 'Assalam o Alaikum ' + name + ',\nA gentle reminder: our wedding is on ' + WHEN +
-    (VENUE ? ' at ' + VENUE : '') + '.\n' + (ans === ANSWERS.yes ? 'We are so happy you are joining us' + (who ? ' (' + who + ')' : '') + ' and look forward to celebrating with you.'
-    : 'We would love to see you there.');   // text only: attach the reminder picture yourself
-  cell.setFormula('=HYPERLINK("https://wa.me/' + phone + '?text=' + encodeURIComponent(msg) + '","Send reminder ➜")');
+  // picture only: the link just opens this guest's WhatsApp chat (no text). Attach the reminder picture and send.
+  cell.setFormula('=HYPERLINK("https://wa.me/' + phone + '","Send reminder ➜")');
   return true;
 }
 
