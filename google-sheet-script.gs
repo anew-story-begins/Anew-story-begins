@@ -14,9 +14,15 @@ var HEAD = ['Name', 'WhatsApp', 'Ladies', 'Gents', 'Children', 'Code', 'Invite l
 var C = { name: 1, phone: 2, ladies: 3, gents: 4, children: 5, code: 6, link: 7, send: 8, answer: 9, at: 10, note: 11 };
 var ANSWERS = { yes: 'Joyfully accepts', maybe: 'Maybe', no: 'Regretfully declines' };
 
-function onOpen() {
+// Run this once from the editor (choose "setup", press Run). It creates the Guests tab.
+function setup() {
   guests();
-  SpreadsheetApp.getUi().createMenu('Wedding').addItem('Make invite links', 'makeLinks').addToUi();
+  SpreadsheetApp.getActive().toast('Guests tab is ready.', 'Wedding');
+}
+
+// Adds the "Wedding" menu every time the sheet is opened.
+function onOpen() {
+  try { SpreadsheetApp.getUi().createMenu('Wedding').addItem('Make invite links', 'makeLinks').addToUi(); } catch (err) {}
 }
 
 function guests() {
