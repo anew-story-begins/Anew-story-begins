@@ -93,7 +93,7 @@ function makeReminders() {
 function reminderCell(sh, row) {
   var r = sh.getRange(row, 1, 1, HEAD.length).getValues()[0], cell = sh.getRange(row, C.rem), name = String(r[C.name - 1]).trim();
   var ans = r[C.answer - 1];
-  if (!name || (ans !== ANSWERS.yes && ans !== ANSWERS.maybe) || r[C.wrem - 1] === 'No') { cell.setValue(''); return false; }   // only yes, and not if they turned reminders off
+  if (!name || (ans !== ANSWERS.yes && ans !== ANSWERS.maybe) || r[C.wrem - 1] !== 'Yes') { cell.setValue(''); return false; }   // only yes/maybe guests who turned the reminder switch ON
   var phone = String(r[C.phone - 1]).replace(/\D/g, '');
   if (phone.length < 8) { cell.setValue('Add WhatsApp number'); return false; }
   var who = counts(+r[C.cl - 1], +r[C.cg - 1], +r[C.cc - 1]);
@@ -105,7 +105,7 @@ function reminderCell(sh, row) {
 }
 
 // Asks you to type an update (e.g. "The venue is now ..."), then puts a "Send update ➜" WhatsApp link
-// on every guest who has not declined and has not turned event updates off.
+// on every guest who has not declined and turned event updates ON.
 function makeUpdates() {
   var ui = SpreadsheetApp.getUi(), res = ui.prompt('Event update', 'Type the update to send to guests:', ui.ButtonSet.OK_CANCEL);
   if (res.getSelectedButton() !== ui.Button.OK) return;
@@ -115,7 +115,7 @@ function makeUpdates() {
   var rows = sh.getRange(2, 1, last - 1, HEAD.length).getValues();
   rows.forEach(function (r, i) {
     var cell = sh.getRange(i + 2, C.upd), name = String(r[C.name - 1]).trim(), phone = String(r[C.phone - 1]).replace(/\D/g, '');
-    if (!name || r[C.answer - 1] === ANSWERS.no || r[C.wup - 1] === 'No') { cell.setValue(''); return; }
+    if (!name || r[C.answer - 1] === ANSWERS.no || r[C.wup - 1] !== 'Yes') { cell.setValue(''); return; }   // only guests who turned updates ON
     if (phone.length < 8) { cell.setValue('Add WhatsApp number'); return; }
     var msg = 'Assalam o Alaikum ' + name + ',\nWedding update: ' + text + '\nYour invitation: ' + (r[C.link - 1] || SITE);
     cell.setFormula('=HYPERLINK("https://wa.me/' + phone + '?text=' + encodeURIComponent(msg) + '","Send update ➜")');
@@ -161,11 +161,11 @@ function summary() {
 
 // Live name lists on the Summary tab: who has not answered, whose invite / reminder is not ticked as sent.
 function lists(sh) {
-  if (sh.getRange('J1').getValue() === 'YES / MAYBE, REMINDER NOT TICKED AS SENT') return sh;   // already up to date
+  if (sh.getRange('J1').getValue() === 'WANTS REMINDER, NOT TICKED AS SENT') return sh;   // already up to date
   var L = [
     ['D', 'NOT ANSWERED YET', '=IFERROR(FILTER(Guests!A2:B,Guests!A2:A<>"",Guests!I2:I=""),"Everyone has answered")'],
     ['G', 'INVITE NOT TICKED AS SENT', '=IFERROR(FILTER(Guests!A2:B,Guests!A2:A<>"",Guests!Q2:Q<>TRUE),"All invites sent")'],
-    ['J', 'YES / MAYBE, REMINDER NOT TICKED AS SENT', '=IFERROR(FILTER(Guests!A2:B,(Guests!I2:I="Joyfully accepts")+(Guests!I2:I="Maybe"),Guests!R2:R<>TRUE),"All reminders sent")']
+    ['J', 'WANTS REMINDER, NOT TICKED AS SENT', '=IFERROR(FILTER(Guests!A2:B,((Guests!I2:I="Joyfully accepts")+(Guests!I2:I="Maybe"))*(Guests!T2:T="Yes"),Guests!R2:R<>TRUE),"All reminders sent")']
   ];
   L.forEach(function (l) {
     sh.getRange(l[0] + '1').setValue(l[1]);
