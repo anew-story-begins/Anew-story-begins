@@ -64,7 +64,7 @@ function unlockSound(){
    const s=c.createBufferSource(),fl=c.createBiquadFilter(),g=c.createGain();s.buffer=b;fl.type=type||'bandpass';fl.frequency.value=f;fl.Q.value=q;
    g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(0.0001,t+d);s.connect(fl);fl.connect(g);g.connect(out);s.start(t)};
  // realistic key, timed to the animation
- out.gain.value=0.5;wet.gain.value=0.05;const t1=c.currentTime;
+ out.gain.value=0.9;wet.gain.value=0.05;const t1=c.currentTime;
  noise(t1+2.6,0.7,3800,1.2,0.03,'highpass');                       // key slides in (2.6s -> 3.3s)
  noise(t1+3.3,0.03,2800,5,0.25);noise(t1+3.3,0.07,800,2,0.2);     // key seated
  for(let k=0;k<6;k++){const tt=3.42+k*0.11;noise(t1+tt,0.022,2400-k*80,7,0.17);noise(t1+tt,0.035,650,3,0.1)} // turning (3.4s -> 4.1s)
@@ -83,9 +83,11 @@ var WS=(function(){var on=false,A=null,fT=null,fx=null,fg=null,VOL=.6,FVOL=.1,pr
  function start(){on=true;var a=au(),pr=a.play();if(pr&&pr.catch)pr.catch(function(){on=false});fade(VOL,1800);
   if(fx||fbuild()){fx.resume();fg.gain.cancelScheduledValues(fx.currentTime);fg.gain.setTargetAtTime(FVOL,fx.currentTime,1.5)}}
  function stop(){on=false;if(A)fade(0,300,function(){if(!on)A.pause()});if(fx){fg.gain.cancelScheduledValues(fx.currentTime);fg.gain.setTargetAtTime(0,fx.currentTime,.15)}}
+ function prime(){var a=au();a.muted=true;var pr=a.play();var done=function(){a.pause();a.currentTime=0;a.muted=false};if(pr&&pr.then)pr.then(done,function(){a.muted=false});else done();
+  if(!fx)fbuild();if(fx)fx.resume()}
  function setPref(v){pref=v;try{localStorage.setItem('fountainSound',v)}catch(e){}}
  document.addEventListener('visibilitychange',function(){if(!A)return;if(document.hidden){A.pause();if(fx)fx.suspend()}else if(on){A.play().catch(function(){});if(fx)fx.resume()}});
- return{start:start,stop:stop,isOn:function(){return on},pref:function(){return pref},setPref:setPref}})();
+ return{prime:prime,start:start,stop:stop,isOn:function(){return on},pref:function(){return pref},setPref:setPref}})();
 window.weddingSound=WS;
 /* the invitation frame talks to this player by messages (works even if the browser treats the frame as a separate site) */
 addEventListener('message',function(e){var d=e.data;if(!d||typeof d!=='object'||!d.ws)return;
@@ -94,7 +96,7 @@ addEventListener('message',function(e){var d=e.data;if(!d||typeof d!=='object'||
 function openInvite(src){var f=document.createElement('iframe');f.src=src;f.title='Wedding invitation';f.setAttribute('allow','autoplay');
  f.style.cssText='position:fixed;inset:0;width:100%;height:100%;border:0;z-index:2147483000;background:#2b0307';
  document.body.appendChild(f);f.addEventListener('load',function(){try{document.title=f.contentDocument.title||document.title}catch(e){}});}
-document.getElementById('tap').addEventListener('click',()=>{open=!open;render();if(open){unlockSound();if(WS.pref()==='on'&&!WS.isOn())WS.start()}document.body.classList.toggle('go',open);clearTimeout(goNext);
+document.getElementById('tap').addEventListener('click',()=>{open=!open;render();if(open){unlockSound();if(WS.pref()==='on'&&!WS.isOn()){WS.prime();setTimeout(function(){if(!WS.isOn())WS.start()},4250)}}document.body.classList.toggle('go',open);clearTimeout(goNext);
  if(open){const[x,y]=holePos(),vf=document.documentElement;vf.style.setProperty('--gx',x+'px');vf.style.setProperty('--gy',y+'px');
   goNext=setTimeout(()=>{openInvite('invitation.html'+location.search+'#g='+x+','+y)},4650)}});render();
 </script></body></html>
