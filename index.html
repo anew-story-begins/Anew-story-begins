@@ -70,7 +70,31 @@ function unlockSound(){
  for(let k=0;k<6;k++){const tt=3.42+k*0.11;noise(t1+tt,0.022,2400-k*80,7,0.17);noise(t1+tt,0.035,650,3,0.1)} // turning (3.4s -> 4.1s)
  noise(t1+4.1,0.1,450,2.5,0.38);noise(t1+4.1,0.03,1900,4,0.2);   // lock opens
 }
-document.getElementById('tap').addEventListener('click',()=>{open=!open;render();if(open)unlockSound();document.body.classList.toggle('go',open);clearTimeout(goNext);
+
+/* ===== Background music + faint fountain: starts on the key tap, keeps playing inside the invitation ===== */
+var WS=(function(){var on=false,A=null,fT=null,fx=null,fg=null,VOL=.6,FVOL=.1,pref='on';try{pref=localStorage.getItem('fountainSound')||'on'}catch(e){}
+ function au(){if(!A){A=new Audio('assets/music.mp3');A.loop=true;A.preload='auto';A.volume=0}return A}
+ function fade(to,ms,done){var a=au();clearInterval(fT);var from=a.volume,t0=Date.now();fT=setInterval(function(){var k=Math.min(1,(Date.now()-t0)/ms);try{a.volume=from+(to-from)*k}catch(e){}if(k>=1){clearInterval(fT);if(done)done()}},50)}
+ function fbuild(){var C=window.AudioContext||window.webkitAudioContext;if(!C)return false;fx=new C();fg=fx.createGain();fg.gain.value=0;fg.connect(fx.destination);
+  var len=fx.sampleRate*4,buf=fx.createBuffer(1,len,fx.sampleRate),d=buf.getChannelData(0),last=0;for(var i=0;i<len;i++){var w=Math.random()*2-1;last=(last+.04*w)/1.04;d[i]=w*.5+last*3}
+  function layer(f,q,g){var s=fx.createBufferSource();s.buffer=buf;s.loop=true;s.playbackRate.value=.9+Math.random()*.2;var fl=fx.createBiquadFilter();fl.type='lowpass';fl.frequency.value=f;fl.Q.value=q;var gn=fx.createGain();gn.gain.value=g;
+   var lfo=fx.createOscillator(),lg=fx.createGain();lfo.frequency.value=.05+Math.random()*.08;lg.gain.value=g*.3;lfo.connect(lg);lg.connect(gn.gain);lfo.start();s.connect(fl);fl.connect(gn);gn.connect(fg);s.start(0,Math.random()*2)}
+  layer(1100,.4,.1);layer(500,.5,.1);layer(240,.4,.12);return true}
+ function start(){on=true;var a=au(),pr=a.play();if(pr&&pr.catch)pr.catch(function(){on=false});fade(VOL,1800);
+  if(fx||fbuild()){fx.resume();fg.gain.cancelScheduledValues(fx.currentTime);fg.gain.setTargetAtTime(FVOL,fx.currentTime,1.5)}}
+ function stop(){on=false;if(A)fade(0,300,function(){if(!on)A.pause()});if(fx){fg.gain.cancelScheduledValues(fx.currentTime);fg.gain.setTargetAtTime(0,fx.currentTime,.15)}}
+ function setPref(v){pref=v;try{localStorage.setItem('fountainSound',v)}catch(e){}}
+ document.addEventListener('visibilitychange',function(){if(!A)return;if(document.hidden){A.pause();if(fx)fx.suspend()}else if(on){A.play().catch(function(){});if(fx)fx.resume()}});
+ return{start:start,stop:stop,isOn:function(){return on},pref:function(){return pref},setPref:setPref}})();
+window.weddingSound=WS;
+/* the invitation frame talks to this player by messages (works even if the browser treats the frame as a separate site) */
+addEventListener('message',function(e){var d=e.data;if(!d||typeof d!=='object'||!d.ws)return;
+ if(d.ws==='start'){WS.setPref('on');WS.start()}else if(d.ws==='stop'){WS.setPref('off');WS.stop()}
+ try{e.source.postMessage({wsState:true,on:WS.isOn(),pref:WS.pref()},'*')}catch(x){}});
+function openInvite(src){var f=document.createElement('iframe');f.src=src;f.title='Wedding invitation';f.setAttribute('allow','autoplay');
+ f.style.cssText='position:fixed;inset:0;width:100%;height:100%;border:0;z-index:2147483000;background:#2b0307';
+ document.body.appendChild(f);f.addEventListener('load',function(){try{document.title=f.contentDocument.title||document.title}catch(e){}});}
+document.getElementById('tap').addEventListener('click',()=>{open=!open;render();if(open){unlockSound();if(WS.pref()==='on'&&!WS.isOn())WS.start()}document.body.classList.toggle('go',open);clearTimeout(goNext);
  if(open){const[x,y]=holePos(),vf=document.documentElement;vf.style.setProperty('--gx',x+'px');vf.style.setProperty('--gy',y+'px');
-  goNext=setTimeout(()=>{location.href='invitation.html'+location.search+'#g='+x+','+y},4650)}});render();
+  goNext=setTimeout(()=>{openInvite('invitation.html'+location.search+'#g='+x+','+y)},4650)}});render();
 </script></body></html>
