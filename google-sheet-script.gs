@@ -65,7 +65,7 @@ function makeLinks() {
     var name = String(r[C.name - 1]).trim(); if (!name) return;
     var code = r[C.code - 1] || newCode(used), link = SITE + '?g=' + code;
     var phone = String(r[C.phone - 1]).replace(/\D/g, '');
-    var msg = 'Assalam o Alaikum ' + name + ',\nYou are warmly invited to our wedding' +
+    var msg = 'Hi\nYou are warmly invited to our wedding' +
       (counts(+r[2], +r[3], +r[4]) ? ' (' + counts(+r[2], +r[3], +r[4]) + ')' : '') + '.\nPlease open your invitation: ' + link;
     var row = i + 2;
     sh.getRange(row, C.isent, 1, 2).insertCheckboxes();   // tick these after you send
@@ -114,7 +114,7 @@ function makeUpdates() {
     var cell = sh.getRange(i + 2, C.upd), name = String(r[C.name - 1]).trim(), phone = String(r[C.phone - 1]).replace(/\D/g, '');
     if (!name || r[C.answer - 1] === ANSWERS.no || r[C.wup - 1] === 'No') { cell.setValue(''); return; }   // everyone not declined, unless they switched updates off
     if (phone.length < 8) { cell.setValue('Add WhatsApp number'); return; }
-    var msg = 'Assalam o Alaikum ' + name + ',\nWedding update: ' + text + '\nYour invitation: ' + (r[C.link - 1] || SITE);
+    var msg = 'Hi\nWedding update: ' + text + '\nYour invitation: ' + (r[C.link - 1] || SITE);
     cell.setFormula('=HYPERLINK("https://wa.me/' + phone + '?text=' + encodeURIComponent(msg) + '","Send update ➜")');
     made++;
   });
