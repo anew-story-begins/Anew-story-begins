@@ -35,14 +35,10 @@
       trigger: sec, start: 'top 65%', end: 'bottom 35%',
       onEnter: function () { if (i) tl.restart(); }, onEnterBack: function () { tl.restart(); }
     });
-    /* soft depth: the blurred backdrop drifts slower than the page */
-    var bd = sec.querySelector('.bd');
-    if (bd && window.ScrollTrigger) gsap.fromTo(bd, { '--py': '-36px' }, { '--py': '36px', ease: 'none',
-      scrollTrigger: { trigger: sec, start: 'top bottom', end: 'bottom top', scrub: true } });
   });
 
   /* 3. The "next page" arrows breathe gently so guests know to scroll */
-  if (!reduce) gsap.to('.nx', { y: 6, duration: 1.1, ease: 'sine.inOut', yoyo: true, repeat: -1 });
+
 
   /* 4. Countdown digits flip when they change */
   if (M && !reduce) [].slice.call(document.querySelectorAll('.cd')).forEach(function (el) {
