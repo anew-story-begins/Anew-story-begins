@@ -19,13 +19,13 @@ var ANSWERS = { yes: 'Joyfully accepts', maybe: 'Maybe', no: 'Regretfully declin
 
 // Run this once from the editor (choose "setup", press Run). It creates the Guests tab.
 function setup() {
-  guests(); summary();
+  guests(); summary(); try { showSendLink(); } catch (e) {}
   SpreadsheetApp.getActive().toast('Guests tab is ready.', 'Wedding');
 }
 
 // Adds the "Wedding" menu every time the sheet is opened.
 function onOpen() {
-  try { SpreadsheetApp.getUi().createMenu('Wedding').addItem('Make invite links', 'makeLinks').addItem('Send invites one by one ➜', 'sendSidebar').addItem('Make reminder links (yes and maybe)', 'makeReminders').addItem('Send an event update…', 'makeUpdates').addToUi(); } catch (err) {}
+  try { SpreadsheetApp.getUi().createMenu('Wedding').addItem('Make invite links', 'makeLinks').addItem('Send invites one by one ➜', 'sendSidebar').addItem('Get my phone sending page link', 'showSendLink').addItem('Make reminder links (yes and maybe)', 'makeReminders').addItem('Send an event update…', 'makeUpdates').addToUi(); } catch (err) {}
 }
 
 function guests() {
@@ -215,6 +215,61 @@ function nextGuest(fromRow) {
 }
 function markInviteSent(row) { guests().getRange(row, C.isent).insertCheckboxes().setValue(true); }
 
+// ---------- Private phone sending page ----------
+// A page only you can open (secret key). It lists guests with big buttons that open the WhatsApp APP directly
+// (not the Sheets in-app browser), and ticks "Invite sent?" / "Reminder sent?" for you.
+function sendKey() {
+  var pr = PropertiesService.getScriptProperties(), k = pr.getProperty('SEND_KEY');
+  if (!k) { k = Utilities.getUuid().replace(/-/g, '').slice(0, 20); pr.setProperty('SEND_KEY', k); }
+  return k;
+}
+function sendPageUrl() { var u = ScriptApp.getService().getUrl(); return u ? u + '?action=send&k=' + sendKey() : ''; }
+function showSendLink() {
+  var u = sendPageUrl(), sh = summary();
+  sh.getRange('A23').setValue('Phone sending page (private, do not share):').setFontWeight('bold');
+  sh.getRange('A24').setValue(u || 'Deploy the web app first (Deploy > Manage deployments).');
+  SpreadsheetApp.getActive().toast('Your private sending page link is on the Summary tab (cell A24).', 'Wedding', 8);
+}
+function esc(t) { return String(t).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function sendPage(k) {
+  var sh = guests(), last = sh.getLastRow(), inv = [], rem = [];
+  if (last >= 2) sh.getRange(2, 1, last - 1, HEAD.length).getValues().forEach(function (r, i) {
+    var row = i + 2, name = String(r[C.name - 1]).trim(), phone = String(r[C.phone - 1]).replace(/\D/g, '');
+    if (!name || phone.length < 8) return;
+    var link = r[C.link - 1] || (r[C.code - 1] ? SITE + '?g=' + r[C.code - 1] : '');
+    if (link) inv.push({ row: row, name: name, phone: phone, done: r[C.isent - 1] === true, text: inviteMsg(r, link) });
+    var a = r[C.answer - 1];
+    if ((a === ANSWERS.yes || a === ANSWERS.maybe) && r[C.wrem - 1] !== 'No') rem.push({ row: row, name: name, phone: phone, done: r[C.rsent - 1] === true, text: '' });
+  });
+  function list(arr, kind) {
+    arr.sort(function (x, y) { return x.done - y.done; });
+    if (!arr.length) return '<p class="m">Nobody here yet.</p>';
+    return arr.map(function (g) {
+      var q = 'phone=' + g.phone + (g.text ? '&text=' + encodeURIComponent(g.text) : '');
+      return '<div class="g' + (g.done ? ' d' : '') + '" id="' + kind + g.row + '"><div><b>' + esc(g.name) + '</b><br><small>+' + g.phone + '</small></div>' +
+        '<a class="b" target="_top" href="whatsapp://send?' + q + '" onclick="mk(\'' + kind + '\',' + g.row + ')">' + (g.done ? 'Sent ✓ again' : 'Send ➜') + '</a></div>';
+    }).join('');
+  }
+  var html = '<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>' +
+    'body{font:16px Arial;margin:0;background:#f7f1e6;color:#3a160f}h2{margin:0;padding:14px 16px;background:#5a0f18;color:#f3e6cf;font-size:18px}' +
+    '.t{display:flex}.t button{flex:1;padding:12px;border:0;background:#eadfcb;font-size:15px}.t button.on{background:#fff;font-weight:bold}' +
+    '.g{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #e3d6bf;background:#fff}.g.d{opacity:.5}' +
+    '.b{background:#25D366;color:#fff;text-decoration:none;padding:12px 16px;border-radius:8px;font-weight:bold;white-space:nowrap}.m{padding:16px}' +
+    '.n{font-size:13px;padding:10px 16px;color:#6b4a2a}</style></head><body><h2>Send from your phone</h2>' +
+    '<div class="t"><button id="ti" class="on" onclick="tab(1)">Invites</button><button id="tr" onclick="tab(0)">Reminders (picture)</button></div>' +
+    '<div id="pi"><p class="n">Tap Send ➜, WhatsApp opens with the message ready, press send, come back for the next.</p>' + list(inv, 'i') + '</div>' +
+    '<div id="pr" style="display:none"><p class="n">Opens the guest\'s chat. Attach the reminder picture and send.</p>' + list(rem, 'r') + '</div>' +
+    '<script>var K=' + JSON.stringify(k) + ';function tab(i){document.getElementById("pi").style.display=i?"":"none";document.getElementById("pr").style.display=i?"none":"";' +
+    'document.getElementById("ti").className=i?"on":"";document.getElementById("tr").className=i?"":"on"}' +
+    'function mk(kind,row){var e=document.getElementById(kind+row);e.className="g d";e.querySelector("a").textContent="Sent ✓ again";google.script.run.webMark(K,kind,row)}</script></body></html>';
+  return HtmlService.createHtmlOutput(html).setTitle('Send invites').addMetaTag('viewport', 'width=device-width, initial-scale=1');
+}
+function webMark(k, kind, row) {
+  if (k !== sendKey()) return;
+  row = parseInt(row, 10); if (!(row >= 2)) return;
+  guests().getRange(row, kind === 'r' ? C.rsent : C.isent).insertCheckboxes().setValue(true);
+}
+
 function clean(v, max) {
   var t = String(v || '').replace(/[\r\n]+/g, ' ').trim().slice(0, max || 200);
   return /^[=+\-@]/.test(t) ? "'" + t : t;
@@ -241,6 +296,7 @@ function doGet(e) {
     return reply({ ok: true, name: String(r[0]), ladies: +r[2] || 0, gents: +r[3] || 0, children: +r[4] || 0,
       answer: String(r[C.answer - 1] || '') });
   }
+  if (p.action === 'send') return p.k && p.k === sendKey() ? sendPage(p.k) : ContentService.createTextOutput('Not allowed');
   var lock = LockService.getScriptLock(); lock.waitLock(10000);
   try {
     summary();
