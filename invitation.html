@@ -357,9 +357,9 @@ $('calG').addEventListener('click',function(){var c=calInfo(),a=document.createE
 $('calX').addEventListener('click',calClose);$('cal').addEventListener('click',function(e){if(e.target===this)calClose()});
 function savePrefs(){prefsToSheet();if(DB&&UID){var nm=(mine&&mine.name)||$('rName').value.trim().slice(0,60);DB.doc('reminders/'+UID).set({updates:!!prefs.updates,daybefore:!!prefs.daybefore,name:nm}).catch(function(){})}}
 function chosen(){var L=[];if(prefs.updates)L.push('event updates');if(prefs.daybefore)L.push('a reminder the day before');return L}
-$('waChat').addEventListener('click',function(){wa('Assalam o Alaikum! I have a question about the wedding.')});
+$('waChat').addEventListener('click',function(){wa('Hi\nI have a question about the wedding.')});
 $('waOpen').addEventListener('click',function(){var L=chosen(),nm=(mine&&mine.name)||$('rName').value.trim();
- wa('Assalam o Alaikum!'+(nm?' This is '+nm+'.':'')+(L.length?' Please send me '+L.join(', ')+' for the wedding.':' I would like to stay connected for the wedding.'));savePrefs()});
+ wa('Hi'+(nm?'\nThis is '+nm+'.':'')+(L.length?' Please send me '+L.join(', ')+' for the wedding.':' I would like to stay connected for the wedding.'));savePrefs()});
 
 /* ===== Owner: RSVP list ===== */
 $('mRsvps').addEventListener('click',function(){closeM();if(!DB)return;$('rlBody').innerHTML='';$('rlSum').textContent='Loading…';$('rl').classList.add('open');
