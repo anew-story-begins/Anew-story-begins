@@ -65,8 +65,7 @@ function makeLinks() {
     var name = String(r[C.name - 1]).trim(); if (!name) return;
     var code = r[C.code - 1] || newCode(used), link = SITE + '?g=' + code;
     var phone = String(r[C.phone - 1]).replace(/\D/g, '');
-    var msg = 'Hi\nYou are warmly invited to our wedding' +
-      (counts(+r[2], +r[3], +r[4]) ? ' (' + counts(+r[2], +r[3], +r[4]) + ')' : '') + '.\nPlease open your invitation: ' + link;
+    var msg = inviteMsg(r, link);
     var row = i + 2;
     sh.getRange(row, C.isent, 1, 2).insertCheckboxes();   // tick these after you send
     sh.getRange(row, C.code).setValue(code);
@@ -183,8 +182,7 @@ function lists(sh) {
 // Opens a panel on the right. Each click on "Send to next guest" opens WhatsApp for the next guest
 // whose "Invite sent?" box is not ticked (message and personal link already typed) and ticks the box.
 function inviteMsg(r, link) {
-  var c = counts(+r[C.ladies - 1], +r[C.gents - 1], +r[C.children - 1]);
-  return 'Hi\nYou are warmly invited to our wedding' + (c ? ' (' + c + ')' : '') + '.\nPlease open your invitation: ' + link;
+  return 'Hi\nPlease look through the link:\n' + link;
 }
 function sendSidebar() {
   var html = '<div style="font:14px Arial;padding:6px">' +
