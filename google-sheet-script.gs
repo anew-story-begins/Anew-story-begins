@@ -10,6 +10,8 @@
  * When a guest answers on the website, Answer / Answered on (and Note) fill in by themselves.
  */
 var SITE = 'https://anew-story-begins.github.io/Anew-story-begins/';
+// Wedding WhatsApp group (guests who turn on Updates & Reminders are invited to join it)
+var GROUP = 'https://chat.whatsapp.com/Bxaf5dKSHY02HZL1HQibKn';
 var HEAD = ['Name', 'WhatsApp', 'Ladies', 'Gents', 'Children', 'Code', 'Invite link', 'Send invite', 'Answer', 'Answered on', 'Note', 'Coming: Ladies', 'Coming: Gents', 'Coming: Children', 'Coming: Total', 'Send reminder', 'Invite sent?', 'Reminder sent?', 'Wants updates', 'Wants reminder', 'Send update'];
 var C = { name: 1, phone: 2, ladies: 3, gents: 4, children: 5, code: 6, link: 7, send: 8, answer: 9, at: 10, note: 11, cl: 12, cg: 13, cc: 14, ct: 15, rem: 16, isent: 17, rsent: 18, wup: 19, wrem: 20, upd: 21 };
 // Reminder wording (change when the real date / venue is known)
@@ -228,6 +230,8 @@ function showSendLink() {
   var u = sendPageUrl(), sh = summary();
   sh.getRange('A23').setValue('Phone sending page (private, do not share):').setFontWeight('bold');
   sh.getRange('A24').setValue(u || 'Deploy the web app first (Deploy > Manage deployments).');
+  sh.getRange('A26').setValue('Wedding WhatsApp group (send reminders and updates here):').setFontWeight('bold');
+  sh.getRange('A27').setFormula('=HYPERLINK("' + GROUP + '","Open the wedding group ➜")');
   SpreadsheetApp.getActive().toast('Your private sending page link is on the Summary tab (cell A24).', 'Wedding', 8);
 }
 function esc(t) { return String(t).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
@@ -257,11 +261,14 @@ function sendPage(k) {
     'body{font:16px Arial;margin:0;background:#f7f1e6;color:#3a160f}h2{margin:0;padding:14px 16px;background:#5a0f18;color:#f3e6cf;font-size:18px}' +
     '.t{display:flex}.t button{flex:1;padding:12px;border:0;background:#eadfcb;font-size:15px}.t button.on{background:#fff;font-weight:bold}' +
     '.g{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #e3d6bf;background:#fff}.g.d{opacity:.5}' +
-    '.b{background:#25D366;color:#fff;text-decoration:none;padding:12px 16px;border-radius:8px;font-weight:bold;white-space:nowrap}.bs{display:flex;gap:8px;align-items:center}.b2{color:#5a0f18;text-decoration:none;padding:12px 10px;border:1px solid #c9b48f;border-radius:8px;white-space:nowrap}.m{padding:16px}' +
+    '.b{background:#25D366;color:#fff;text-decoration:none;padding:12px 16px;border-radius:8px;font-weight:bold;white-space:nowrap}.bs{display:flex;gap:8px;align-items:center}.b2{color:#5a0f18;text-decoration:none;padding:12px 10px;border:1px solid #c9b48f;border-radius:8px;white-space:nowrap}.m{padding:16px}.grp{margin:12px 16px;padding:14px;border:1px solid #c9b48f;border-radius:10px;background:#fff;display:flex;flex-direction:column;gap:8px}.grp span{font-size:13px;color:#6b4a2a}' +
     '.n{font-size:13px;padding:10px 16px;color:#6b4a2a}</style></head><body><h2>Send from your phone</h2>' +
     '<div class="t"><button id="ti" class="on" onclick="tab(1)">Invites</button><button id="tr" onclick="tab(0)">Reminders (picture)</button></div>' +
     '<div id="pi"><p class="n">Tap Send ➜, WhatsApp opens with the message ready, press send, come back for the next.</p>' + list(inv, 'i') + '</div>' +
-    '<div id="pr" style="display:none"><p class="n">Tap Share picture ➜, choose WhatsApp, pick this guest and send. (Chat opens their chat if you need it.)</p>' + list(rem, 'r') + '</div>' +
+    '<div id="pr" style="display:none">' +
+    '<div class="grp"><b>Send to everyone in the wedding group</b><span>Share the picture, choose WhatsApp, then pick the group.</span>' +
+    '<div class="bs"><a class="b2" target="_blank" rel="noopener" href="' + GROUP + '">Open group</a><a class="b" target="_blank" rel="noopener" href="' + SITE + 'share.html?n=' + encodeURIComponent('the wedding group') + '">Share picture ➜</a></div></div>' +
+    '<p class="n">Or send to one guest at a time:</p>' + list(rem, 'r') + '</div>' +
     '<script>var K=' + JSON.stringify(k) + ';function tab(i){document.getElementById("pi").style.display=i?"":"none";document.getElementById("pr").style.display=i?"none":"";' +
     'document.getElementById("ti").className=i?"on":"";document.getElementById("tr").className=i?"":"on"}' +
     'function mk(kind,row){var e=document.getElementById(kind+row);e.className="g d";var bb=e.querySelector("a.b");if(bb)bb.textContent="Sent ✓ again";google.script.run.webMark(K,kind,row)}</script></body></html>';
