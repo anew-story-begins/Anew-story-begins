@@ -247,21 +247,24 @@ function sendPage(k) {
     return arr.map(function (g) {
       var q = 'phone=' + g.phone + (g.text ? '&text=' + encodeURIComponent(g.text) : '');
       return '<div class="g' + (g.done ? ' d' : '') + '" id="' + kind + g.row + '"><div><b>' + esc(g.name) + '</b><br><small>+' + g.phone + '</small></div>' +
-        '<a class="b" target="_blank" rel="noopener" href="https://api.whatsapp.com/send?' + q + '" onclick="mk(\'' + kind + '\',' + g.row + ')">' + (g.done ? 'Sent ✓ again' : 'Send ➜') + '</a></div>';
+        (kind === 'r'
+          ? '<span class="bs"><a class="b2" target="_blank" rel="noopener" href="https://api.whatsapp.com/send?' + q + '">Chat</a>' +
+            '<a class="b" target="_blank" rel="noopener" href="' + SITE + 'share.html?n=' + encodeURIComponent(g.name) + '" onclick="mk(\'r\',' + g.row + ')">' + (g.done ? 'Sent ✓ again' : 'Share picture ➜') + '</a></span>'
+          : '<a class="b" target="_blank" rel="noopener" href="https://api.whatsapp.com/send?' + q + '" onclick="mk(\'' + kind + '\',' + g.row + ')">' + (g.done ? 'Sent ✓ again' : 'Send ➜') + '</a>') + '</div>';
     }).join('');
   }
   var html = '<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>' +
     'body{font:16px Arial;margin:0;background:#f7f1e6;color:#3a160f}h2{margin:0;padding:14px 16px;background:#5a0f18;color:#f3e6cf;font-size:18px}' +
     '.t{display:flex}.t button{flex:1;padding:12px;border:0;background:#eadfcb;font-size:15px}.t button.on{background:#fff;font-weight:bold}' +
     '.g{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #e3d6bf;background:#fff}.g.d{opacity:.5}' +
-    '.b{background:#25D366;color:#fff;text-decoration:none;padding:12px 16px;border-radius:8px;font-weight:bold;white-space:nowrap}.m{padding:16px}' +
+    '.b{background:#25D366;color:#fff;text-decoration:none;padding:12px 16px;border-radius:8px;font-weight:bold;white-space:nowrap}.bs{display:flex;gap:8px;align-items:center}.b2{color:#5a0f18;text-decoration:none;padding:12px 10px;border:1px solid #c9b48f;border-radius:8px;white-space:nowrap}.m{padding:16px}' +
     '.n{font-size:13px;padding:10px 16px;color:#6b4a2a}</style></head><body><h2>Send from your phone</h2>' +
     '<div class="t"><button id="ti" class="on" onclick="tab(1)">Invites</button><button id="tr" onclick="tab(0)">Reminders (picture)</button></div>' +
     '<div id="pi"><p class="n">Tap Send ➜, WhatsApp opens with the message ready, press send, come back for the next.</p>' + list(inv, 'i') + '</div>' +
-    '<div id="pr" style="display:none"><p class="n">Opens the guest\'s chat. Attach the reminder picture and send.</p>' + list(rem, 'r') + '</div>' +
+    '<div id="pr" style="display:none"><p class="n">Tap Share picture ➜, choose WhatsApp, pick this guest and send. (Chat opens their chat if you need it.)</p>' + list(rem, 'r') + '</div>' +
     '<script>var K=' + JSON.stringify(k) + ';function tab(i){document.getElementById("pi").style.display=i?"":"none";document.getElementById("pr").style.display=i?"none":"";' +
     'document.getElementById("ti").className=i?"on":"";document.getElementById("tr").className=i?"":"on"}' +
-    'function mk(kind,row){var e=document.getElementById(kind+row);e.className="g d";e.querySelector("a").textContent="Sent ✓ again";google.script.run.webMark(K,kind,row)}</script></body></html>';
+    'function mk(kind,row){var e=document.getElementById(kind+row);e.className="g d";var bb=e.querySelector("a.b");if(bb)bb.textContent="Sent ✓ again";google.script.run.webMark(K,kind,row)}</script></body></html>';
   return HtmlService.createHtmlOutput(html).setTitle('Send invites').addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }
 function webMark(k, kind, row) {
