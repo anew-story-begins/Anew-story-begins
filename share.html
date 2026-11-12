@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Share Reminder</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600&family=Cormorant+Garamond:wght@600&display=swap" rel="stylesheet">
+<style>
+html,body{margin:0;background:#2b0307;color:#f3e6cf;font:17px/1.4 'Cormorant Garamond',Georgia,serif;min-height:100%}
+main{max-width:460px;margin:0 auto;padding:16px 16px 28px;display:flex;flex-direction:column;align-items:center;gap:14px}
+.to{font:600 13px 'Cinzel',serif;letter-spacing:.12em;text-align:center;color:#e8c97e}
+.to b{display:block;font-size:20px;letter-spacing:.04em;color:#fff3d6;margin-top:4px}
+img{width:100%;max-width:340px;border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,.5)}
+button{width:100%;max-width:340px;padding:15px;border-radius:999px;border:0;background:#25D366;color:#fff;font:600 16px system-ui,-apple-system,'Segoe UI',sans-serif;cursor:pointer}
+button:disabled{opacity:.6}
+.help{font-size:15px;color:#d9c6a4;text-align:center;max-width:340px}
+</style></head>
+<body><main>
+<div class="to" id="to" hidden>SEND THE REMINDER TO<b id="nm"></b></div>
+<img id="pic" src="assets/reminder-card.jpg" alt="Wedding reminder picture">
+<button id="go" disabled>Loading picture…</button>
+<p class="help" id="help">Tap the green button, choose <b>WhatsApp</b>, pick the guest and press send.</p>
+</main>
+<script>
+(function(){
+  var nm=new URLSearchParams(location.search).get('n');
+  if(nm){document.getElementById('nm').textContent=nm.slice(0,60);document.getElementById('to').hidden=false}
+  var go=document.getElementById('go'),help=document.getElementById('help'),file=null;
+  function fallback(){go.hidden=true;help.innerHTML='Your phone can’t share the picture directly from here. <b>Long-press the picture</b>, tap <b>Share</b>, then choose WhatsApp.'}
+  fetch('assets/reminder-card.jpg').then(function(r){return r.blob()}).then(function(b){
+    file=new File([b],'wedding-reminder.jpg',{type:'image/jpeg'});
+    if(navigator.canShare&&navigator.canShare({files:[file]})){go.disabled=false;go.textContent='Share picture on WhatsApp ➜'}else fallback();
+  }).catch(fallback);
+  go.addEventListener('click',function(){
+    if(!file)return;
+    navigator.share({files:[file]}).catch(function(e){if(e&&e.name!=='AbortError')fallback()});
+  });
+})();
+</script>
+</body></html>
