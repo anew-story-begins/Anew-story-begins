@@ -80,11 +80,15 @@ var WS=(function(){var on=false,A=null,fT=null,fx=null,fg=null,VOL=.6,FVOL=.045,
   function layer(f,q,g){var s=fx.createBufferSource();s.buffer=buf;s.loop=true;s.playbackRate.value=.9+Math.random()*.2;var fl=fx.createBiquadFilter();fl.type='lowpass';fl.frequency.value=f;fl.Q.value=q;var gn=fx.createGain();gn.gain.value=g;
    var lfo=fx.createOscillator(),lg=fx.createGain();lfo.frequency.value=.05+Math.random()*.08;lg.gain.value=g*.3;lfo.connect(lg);lg.connect(gn.gain);lfo.start();s.connect(fl);fl.connect(gn);gn.connect(fg);s.start(0,Math.random()*2)}
   layer(1100,.4,.1);layer(500,.5,.1);layer(240,.4,.12);return true}
- function start(){on=true;var a=au(),pr=a.play();if(pr&&pr.catch)pr.catch(function(){on=false});fade(VOL,1800);
-  if(fx||fbuild()){fx.resume();fg.gain.cancelScheduledValues(fx.currentTime);fg.gain.setTargetAtTime(FVOL,fx.currentTime,1.5)}}
- function stop(){on=false;if(A)fade(0,300,function(){if(!on)A.pause()});if(fx){fg.gain.cancelScheduledValues(fx.currentTime);fg.gain.setTargetAtTime(0,fx.currentTime,.15)}}
- function prime(){var a=au();a.muted=true;var pr=a.play();var done=function(){a.pause();a.currentTime=0;a.muted=false};if(pr&&pr.then)pr.then(done,function(){a.muted=false});else done();
-  if(!fx)fbuild();if(fx)fx.resume()}
+ var mg=null;
+ function graph(){if(!fx&&!fbuild())return false;if(!mg){try{var src=fx.createMediaElementSource(au());mg=fx.createGain();mg.gain.value=0;src.connect(mg);mg.connect(fx.destination);au().volume=1}catch(e){mg=null}}return !!mg}
+ /* called inside the tap: unlocks sound on every phone (iPhone included); music stays silent until start() */
+ function prime(){graph();if(fx)fx.resume();var a=au(),pr=a.play();if(pr&&pr.catch)pr.catch(function(){});if(!mg){a.volume=0}}
+ function start(){on=true;var a=au();if(a.paused){var pr=a.play();if(pr&&pr.catch)pr.catch(function(){})}
+  if(fx){fx.resume();if(mg){mg.gain.cancelScheduledValues(fx.currentTime);mg.gain.setValueAtTime(mg.gain.value,fx.currentTime);mg.gain.linearRampToValueAtTime(VOL,fx.currentTime+2)}else fade(VOL,1800);
+   fg.gain.cancelScheduledValues(fx.currentTime);fg.gain.setTargetAtTime(FVOL,fx.currentTime,1.5)}else fade(VOL,1800)}
+ function stop(){on=false;if(fx){var n=fx.currentTime;if(mg){mg.gain.cancelScheduledValues(n);mg.gain.setTargetAtTime(0,n,.1)}fg.gain.cancelScheduledValues(n);fg.gain.setTargetAtTime(0,n,.15)}
+  if(A){if(mg)setTimeout(function(){if(!on)A.pause()},400);else fade(0,300,function(){if(!on)A.pause()})}}
  function setPref(v){pref=v;try{localStorage.setItem('fountainSound',v)}catch(e){}}
  document.addEventListener('visibilitychange',function(){if(!A)return;if(document.hidden){A.pause();if(fx)fx.suspend()}else if(on){A.play().catch(function(){});if(fx)fx.resume()}});
  return{prime:prime,start:start,stop:stop,isOn:function(){return on},pref:function(){return pref},setPref:setPref}})();
@@ -96,7 +100,7 @@ addEventListener('message',function(e){var d=e.data;if(!d||typeof d!=='object'||
 function openInvite(src){var f=document.createElement('iframe');f.src=src;f.title='Wedding invitation';f.setAttribute('allow','autoplay');
  f.style.cssText='position:fixed;inset:0;width:100%;height:100%;border:0;z-index:2147483000;background:#2b0307';
  document.body.appendChild(f);f.addEventListener('load',function(){try{document.title=f.contentDocument.title||document.title}catch(e){}});}
-document.getElementById('tap').addEventListener('click',()=>{open=!open;render();if(open){unlockSound();if(WS.pref()==='on'&&!WS.isOn()){WS.prime();setTimeout(function(){if(!WS.isOn())WS.start()},4250)}}document.body.classList.toggle('go',open);clearTimeout(goNext);
+document.getElementById('tap').addEventListener('click',()=>{open=!open;render();if(open){unlockSound();if(!WS.isOn()){WS.setPref('on');WS.prime();setTimeout(function(){if(!WS.isOn())WS.start()},4250)}}document.body.classList.toggle('go',open);clearTimeout(goNext);
  if(open){const[x,y]=holePos(),vf=document.documentElement;vf.style.setProperty('--gx',x+'px');vf.style.setProperty('--gy',y+'px');
   goNext=setTimeout(()=>{openInvite('invitation.html'+location.search+'#g='+x+','+y)},4650)}});render();
 </script><script src="vendor/gsap.min.js"></script><script src="anim/key.js"></script></body></html>
