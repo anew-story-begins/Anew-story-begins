@@ -72,7 +72,7 @@ function unlockSound(){
 }
 
 /* ===== Background music + faint fountain: starts on the key tap, keeps playing inside the invitation ===== */
-var WS=(function(){var on=false,A=null,fT=null,fx=null,fg=null,VOL=.6,FVOL=.1,pref='on';try{pref=localStorage.getItem('fountainSound')||'on'}catch(e){}
+var WS=(function(){var on=false,A=null,fT=null,fx=null,fg=null,VOL=.6,FVOL=.045,pref='on';try{pref=localStorage.getItem('fountainSound')||'on'}catch(e){}
  function au(){if(!A){A=new Audio('assets/music.mp3');A.loop=true;A.preload='auto';A.volume=0}return A}
  function fade(to,ms,done){var a=au();clearInterval(fT);var from=a.volume,t0=Date.now();fT=setInterval(function(){var k=Math.min(1,(Date.now()-t0)/ms);try{a.volume=from+(to-from)*k}catch(e){}if(k>=1){clearInterval(fT);if(done)done()}},50)}
  function fbuild(){var C=window.AudioContext||window.webkitAudioContext;if(!C)return false;fx=new C();fg=fx.createGain();fg.gain.value=0;fg.connect(fx.destination);

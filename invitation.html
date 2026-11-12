@@ -243,7 +243,7 @@ var playing=false,pref='on',AU=null,fadeT=null,VOL=.6;try{pref=localStorage.getI
 function au(){if(!AU){AU=new Audio('assets/music.mp3');AU.loop=true;AU.preload='auto';AU.volume=0}return AU}
 function fade(to,ms,done){var a=au();clearInterval(fadeT);var from=a.volume,t0=Date.now();fadeT=setInterval(function(){var k=Math.min(1,(Date.now()-t0)/ms);try{a.volume=from+(to-from)*k}catch(e){}if(k>=1){clearInterval(fadeT);if(done)done()}},50)}
 /* very faint fountain water underneath the music (generated live) */
-var fx=null,fg=null,FVOL=.1;
+var fx=null,fg=null,FVOL=.045;
 function fbuild(){var AC=window.AudioContext||window.webkitAudioContext;if(!AC)return false;fx=new AC();fg=fx.createGain();fg.gain.value=0;fg.connect(fx.destination);
  var len=fx.sampleRate*4,buf=fx.createBuffer(1,len,fx.sampleRate),d=buf.getChannelData(0),last=0;for(var i=0;i<len;i++){var w=Math.random()*2-1;last=(last+.04*w)/1.04;d[i]=w*.5+last*3}
  function layer(f,q,g){var s=fx.createBufferSource();s.buffer=buf;s.loop=true;s.playbackRate.value=.9+Math.random()*.2;var fl=fx.createBiquadFilter();fl.type='lowpass';fl.frequency.value=f;fl.Q.value=q;var gn=fx.createGain();gn.gain.value=g;
