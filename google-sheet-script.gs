@@ -182,7 +182,7 @@ function lists(sh) {
 // Opens a panel on the right. Each click on "Send to next guest" opens WhatsApp for the next guest
 // whose "Invite sent?" box is not ticked (message and personal link already typed) and ticks the box.
 function inviteMsg(r, link) {
-  return 'Hi\nPlease look through the link:\n' + link;
+  return 'A new story begins\n' + link;
 }
 function sendSidebar() {
   var html = '<div style="font:14px Arial;padding:6px">' +
