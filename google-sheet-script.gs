@@ -247,7 +247,7 @@ function sendPage(k) {
     return arr.map(function (g) {
       var q = 'phone=' + g.phone + (g.text ? '&text=' + encodeURIComponent(g.text) : '');
       return '<div class="g' + (g.done ? ' d' : '') + '" id="' + kind + g.row + '"><div><b>' + esc(g.name) + '</b><br><small>+' + g.phone + '</small></div>' +
-        '<a class="b" target="_top" href="whatsapp://send?' + q + '" onclick="mk(\'' + kind + '\',' + g.row + ')">' + (g.done ? 'Sent ✓ again' : 'Send ➜') + '</a></div>';
+        '<a class="b" target="_blank" rel="noopener" href="https://api.whatsapp.com/send?' + q + '" onclick="mk(\'' + kind + '\',' + g.row + ')">' + (g.done ? 'Sent ✓ again' : 'Send ➜') + '</a></div>';
     }).join('');
   }
   var html = '<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>' +
