@@ -25,7 +25,7 @@ function setup() {
 
 // Adds the "Wedding" menu every time the sheet is opened.
 function onOpen() {
-  try { SpreadsheetApp.getUi().createMenu('Wedding').addItem('Make invite links', 'makeLinks').addItem('Make reminder links (yes and maybe)', 'makeReminders').addItem('Send an event update…', 'makeUpdates').addToUi(); } catch (err) {}
+  try { SpreadsheetApp.getUi().createMenu('Wedding').addItem('Make invite links', 'makeLinks').addItem('Send invites one by one ➜', 'sendSidebar').addItem('Make reminder links (yes and maybe)', 'makeReminders').addItem('Send an event update…', 'makeUpdates').addToUi(); } catch (err) {}
 }
 
 function guests() {
@@ -178,6 +178,44 @@ function lists(sh) {
   sh.getRange('E:E').setNumberFormat('0'); sh.getRange('I:I').setNumberFormat('0'); sh.getRange('M:M').setNumberFormat('0');
   return sh;
 }
+
+// ---------- "Send invites one by one" panel ----------
+// Opens a panel on the right. Each click on "Send to next guest" opens WhatsApp for the next guest
+// whose "Invite sent?" box is not ticked (message and personal link already typed) and ticks the box.
+function inviteMsg(r, link) {
+  var c = counts(+r[C.ladies - 1], +r[C.gents - 1], +r[C.children - 1]);
+  return 'Hi\nYou are warmly invited to our wedding' + (c ? ' (' + c + ')' : '') + '.\nPlease open your invitation: ' + link;
+}
+function sendSidebar() {
+  var html = '<div style="font:14px Arial;padding:6px">' +
+    '<div id="info" style="margin-bottom:12px">Loading…</div>' +
+    '<button id="go" style="width:100%;padding:12px;font-size:15px;background:#25D366;color:#fff;border:0;border-radius:6px;cursor:pointer" disabled>Send to next guest ➜</button>' +
+    '<button id="skip" style="width:100%;margin-top:8px;padding:8px;border:1px solid #ccc;background:#fff;border-radius:6px;cursor:pointer" disabled>Skip this guest</button>' +
+    '<p style="color:#666;font-size:12px;margin-top:14px">WhatsApp opens with the message ready. Press send there, then come back and click again.</p></div>' +
+    '<script>var cur=null,after=1;' +
+    'function show(g){cur=g;var go=document.getElementById("go"),sk=document.getElementById("skip");' +
+    'if(!g){document.getElementById("info").innerHTML="<b>All invites are ticked as sent.</b>";go.disabled=sk.disabled=true;return}' +
+    'document.getElementById("info").innerHTML="Next: <b>"+g.name.replace(/</g,"&lt;")+"</b><br>"+g.phone+"<br><span style=color:#666>"+g.left+" still to send</span>";go.disabled=sk.disabled=false}' +
+    'function load(){google.script.run.withSuccessHandler(show).nextGuest(after)}' +
+    'document.getElementById("go").onclick=function(){if(!cur)return;window.open(cur.url,"_blank");after=1;google.script.run.withSuccessHandler(load).markInviteSent(cur.row)};' +
+    'document.getElementById("skip").onclick=function(){if(!cur)return;after=cur.row+1;load()};load();</script>';
+  SpreadsheetApp.getUi().showSidebar(HtmlService.createHtmlOutput(html).setTitle('Send invites'));
+}
+function nextGuest(fromRow) {
+  var sh = guests(), last = sh.getLastRow(); if (last < 2) return null;
+  var rows = sh.getRange(2, 1, last - 1, HEAD.length).getValues(), left = 0, found = null;
+  if (rows.some(function (r) { return String(r[C.name - 1]).trim() && !r[C.code - 1]; })) { makeLinks(); rows = sh.getRange(2, 1, last - 1, HEAD.length).getValues(); }
+  rows.forEach(function (r, i) {
+    var row = i + 2, name = String(r[C.name - 1]).trim(), phone = String(r[C.phone - 1]).replace(/\D/g, '');
+    if (!name || phone.length < 8 || r[C.isent - 1] === true) return;
+    left++;
+    if (!found && row >= (fromRow || 1)) found = { row: row, name: name, phone: '+' + phone,
+      url: 'https://wa.me/' + phone + '?text=' + encodeURIComponent(inviteMsg(r, r[C.link - 1] || SITE + '?g=' + r[C.code - 1])) };
+  });
+  if (found) found.left = left;
+  return found;
+}
+function markInviteSent(row) { guests().getRange(row, C.isent).insertCheckboxes().setValue(true); }
 
 function clean(v, max) {
   var t = String(v || '').replace(/[\r\n]+/g, ' ').trim().slice(0, max || 200);
