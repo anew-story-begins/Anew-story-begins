@@ -1,7 +1,7 @@
 /* Animation layer for the key page (GSAP). Keeps the original key-turning animation and sounds;
    adds an entrance, floating gold motes, a gentle push toward the keyhole, a gold burst and a soft handoff. */
 (function () {
-  if (!window.gsap) return;
+  if (!window.gsap) { document.documentElement.classList.add('ready'); return; }
   var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   var st = document.getElementById('stage');
   if (!st) return;
@@ -14,9 +14,9 @@
 
   /* 1. Entrance: the door comes out of the dark with a slow settle */
   if (!reduce) {
-    gsap.from('#bd1', { opacity: 0, duration: 1.6, ease: 'power2.out' });
-    gsap.fromTo(st, { opacity: 0, '--s': 1.07 }, { opacity: 1, '--s': 1, duration: 1.5, ease: 'power3.out' });
-  }
+    gsap.fromTo('#bd1', { opacity: 0 }, { opacity: 1, duration: 1.2, ease: 'power2.out' });
+    gsap.fromTo(st, { opacity: 0, '--s': 1.04 }, { opacity: 1, '--s': 1, duration: 1.2, ease: 'power2.out' });
+  } else document.documentElement.classList.add('ready');
 
   /* 2. Gold motes drift around the keyhole while the guest decides to tap */
   var motes = [];
@@ -46,16 +46,5 @@
     });
   });
 
-  /* 4. Softer handoff: the invitation fades in over the gold light instead of appearing at once */
-  if (typeof window.openInvite === 'function') {
-    var orig = window.openInvite;
-    window.openInvite = function (src) {
-      orig(src);
-      var f = document.querySelector('iframe[title="Wedding invitation"]');
-      if (!f || reduce) return;
-      f.style.opacity = '0';
-      f.addEventListener('load', function () { gsap.to(f, { opacity: 1, duration: 0.8, ease: 'power2.out' }); });
-      setTimeout(function () { if (f.style.opacity === '0') gsap.to(f, { opacity: 1, duration: 0.6 }); }, 2500);
-    };
-  }
+  /* 4. Handoff: the invitation's own gold layer fades out (0.4s), so no extra fade here */
 })();

@@ -30,10 +30,10 @@
     tl.fromTo(ph, { '--s': 0.94, '--ty': '22px', opacity: 0.25 }, { '--s': 1, '--ty': '0px', opacity: 1, duration: 0.9 });
     if (items.length) tl.fromTo(items, { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.55, stagger: 0.06, clearProps: 'transform' }, 0.25);
     if (reduce) { tl.progress(1); return; }
-    if (i === 0) { gsap.delayedCall(0.35, function () { tl.restart(); }); }
+    if (i === 0) { tl.progress(1); return; }   /* first page shows straight away under the gold glow (no flicker) */
     if (window.ScrollTrigger) ScrollTrigger.create({
       trigger: sec, start: 'top 65%', end: 'bottom 35%',
-      onEnter: function () { if (i) tl.restart(); }, onEnterBack: function () { tl.restart(); }
+      once: true, onEnter: function () { tl.restart(); }
     });
   });
 
